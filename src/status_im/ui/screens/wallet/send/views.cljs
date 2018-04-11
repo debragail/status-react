@@ -84,7 +84,10 @@
 ;; "Sign Later" and "Sign Transaction >" buttons
 (defn- sign-buttons [amount-error to amount sufficient-funds? sign-later-handler]
   (let [sign-enabled? (sign-enabled? amount-error to amount)
-        immediate-sign-enabled? (and sign-enabled? sufficient-funds?)]
+        immediate-sign-enabled? (and sign-enabled? sufficient-funds?)]))
+(defn- sign-buttons [amount-error to amount sufficient-funds? sign-later-handler modal?]
+  (let [sign-enabled?           (sign-enabled? amount-error to amount)
+        immediate-sign-enabled? (or modal? (and sign-enabled? sufficient-funds?))]
     [bottom-buttons/bottom-buttons
      styles/sign-buttons
      (when sign-enabled?
@@ -227,7 +230,7 @@
         [sign-buttons amount-error to amount sufficient-funds? (if modal? (if from-chat?
                                                                             #(sign-later-popup true)
                                                                             #(re-frame/dispatch [:navigate-back]))
-                                                                          #(sign-later-popup false))])
+                                                                   #(sign-later-popup false)) modal? #(sign-later-popup false)])
       (when signing?
         [sign-panel])
       (when in-progress? [react/view styles/processing-view])]]))
