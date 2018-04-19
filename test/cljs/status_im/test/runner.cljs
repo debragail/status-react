@@ -8,6 +8,7 @@
             [status-im.test.wallet.transactions.views]
             [status-im.test.profile.events]
             [status-im.test.bots.events]
+            [status-im.test.chat.models]
             [status-im.test.chat.models.input]
             [status-im.test.chat.subs]
             [status-im.test.chat.views.message]
@@ -39,6 +40,7 @@
  'status-im.test.utils.async
  'status-im.test.chat.events
  'status-im.test.chat.subs
+ 'status-im.test.chat.models
  'status-im.test.accounts.events
  'status-im.test.contacts.events
  'status-im.test.profile.events
