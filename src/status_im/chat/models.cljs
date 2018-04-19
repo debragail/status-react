@@ -26,17 +26,15 @@
      :last-clock-value   0}))
 
 (defn add-chat
-  "Adds new chat to db & realm, if the chat has been deleted, make sure is not
-  in deleted-chats"
+  "Adds new chat to db & realm, if the chat has been deleted, restores it"
   ([chat-id cofx]
    (add-chat chat-id {} cofx))
   ([chat-id chat-props {:keys [db] :as cofx}]
-   (let [{:keys [deleted-chats]} db
-         new-chat (merge (create-new-chat chat-id cofx)
-                         chat-props)]
+   (let [new-chat (merge (create-new-chat chat-id cofx)
+                         chat-props
+                         {:is-active true})]
      {:db                  (-> db
-                               (update :chats assoc chat-id new-chat)
-                               (update :deleted-chats (fnil disj #{}) chat-id))
+                               (update :chats assoc chat-id new-chat))
       :data-store/save-chat new-chat})))
 
 (defn add-public-chat
@@ -71,13 +69,14 @@
 (defn upsert-chat
   "Upsert chat when not deleted"
   [{:keys [chat-id] :as chat-props} {:keys [db] :as cofx}]
-  (let [{:keys [chats deleted-chats]} db]
-    (if (get deleted-chats chat-id) ;; when chat is deleted, don't change anything
-      {:db db}
-      (let [chat (or (get chats chat-id)
-                     (create-new-chat chat-id cofx))]
-        {:db                   (update-in db [:chats chat-id] merge chat chat-props)
-         :data-store/save-chat chat}))))
+  (let [chat (or (get (:chats db) chat-id)
+                 (create-new-chat chat-id cofx))]
+
+    (if (:is-active chat)
+      {:db                   (update-in db [:chats chat-id] merge chat chat-props)
+       :data-store/save-chat chat}
+      ;; when chat is deleted, don't change anything
+      {:db db})))
 
 (defn new-update? [{:keys [added-to-at removed-at removed-from-at]} timestamp]
   (and (> timestamp added-to-at)
@@ -86,13 +85,13 @@
 
 (defn remove-chat [chat-id {:keys [db] :as cofx}]
   (let [{:keys [chat-id group-chat debug?]} (get-in db [:chats chat-id])]
-    (cond-> {:db (-> db
-                     (update :chats dissoc chat-id)
-                     (update :deleted-chats (fnil conj #{}) chat-id))}
-      debug?
-      (assoc :data-store/delete-chat chat-id)
-      (not debug?)
-      (assoc :data-store/deactivate-chat chat-id))))
+    (if debug?
+      (-> {:db db}
+          (update-in [:db :chats] dissoc chat-id)
+          (assoc :data-store/delete-chat chat-id))
+      (-> {:db db}
+          (assoc-in [:db :chats chat-id :is-active] false)
+          (assoc :data-store/deactivate-chat chat-id)))))
 
 (defn bot-only-chat? [db chat-id]
   (let [{:keys [group-chat contacts]} (get-in db [:chats chat-id])]

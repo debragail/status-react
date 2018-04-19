@@ -123,7 +123,6 @@
   :initialize-chats
   [(re-frame/inject-cofx :get-default-contacts-and-groups)
    (re-frame/inject-cofx :data-store/all-chats)
-   (re-frame/inject-cofx :data-store/inactive-chat-ids)
    (re-frame/inject-cofx :data-store/get-messages)
    (re-frame/inject-cofx :data-store/unviewed-messages)
    (re-frame/inject-cofx :data-store/message-ids)
@@ -131,7 +130,6 @@
    (re-frame/inject-cofx :data-store/get-local-storage-data)]
   (fn [{:keys [db
                all-stored-chats
-               inactive-chat-ids
                stored-unanswered-requests
                get-stored-messages
                stored-unviewed-messages
@@ -152,9 +150,7 @@
                         {}
                         all-stored-chats)]
       (handlers/merge-fx cofx
-                         {:db (assoc db
-                                     :chats chats
-                                     :deleted-chats inactive-chat-ids)}
+                         {:db (assoc db :chats chats)}
                          (init-console-chat)
                          (group.events/add-default-groups)
                          (add-default-contacts)))))

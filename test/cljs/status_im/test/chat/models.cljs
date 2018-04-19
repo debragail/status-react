@@ -8,11 +8,10 @@
           contact-name   "contact-name"
           chat-props     {:extra-prop "some"}
           cofx           {:now "now"
-                          :db {:deleted-chats     #{"a" chat-id}
-                               :contacts/contacts {chat-id
-                                                   {:name contact-name}}}}
+                          :db {:contacts/contacts {chat-id
+                                                   {:is-active false
+                                                    :name contact-name}}}}
           response      (chat/add-chat chat-id chat-props cofx)
-          deleted-chats (get-in response [:db :deleted-chats])
           actual-chat   (get-in response [:db :chats chat-id])
           store-chat-fx (:data-store/save-chat response)]
       (testing "it adds the chat to the chats collection"
@@ -30,10 +29,10 @@
       (testing "it adds the fx to store a chat"
         (is store-chat-fx))
       (testing "it removes the chat from deleted chats"
-        (is (= #{"a"} deleted-chats))))))
+        (is (= true (:is-active actual-chat)))))))
 
 (deftest upsert-chat-test
-  (testing "upserting an non existing chat"
+  (testing "upserting a non existing chat"
     (let [chat-id        "some-chat-id"
           contact-name   "contact-name"
           chat-props     {:chat-id chat-id
@@ -63,7 +62,8 @@
           chat-props     {:chat-id chat-id
                           :name "new-name"
                           :extra-prop "some"}
-          cofx           {:db {:chats {chat-id {:name "old-name"}}}}
+          cofx           {:db {:chats {chat-id {:is-active true
+                                                :name "old-name"}}}}
           response      (chat/upsert-chat chat-props cofx)
           actual-chat   (get-in response [:db :chats chat-id])
           store-chat-fx (:data-store/save-chat response)]
@@ -82,7 +82,7 @@
                           :name "new-name"
                           :extra-prop "some"}
           cofx           {:some-cofx "b"
-                          :db {:deleted-chats #{chat-id}
-                               :chats {chat-id {:name "old-name"}}}}]
+                          :db {:chats {chat-id {:is-active false
+                                                :name "old-name"}}}}]
       (testing "it returns the db unchanged"
          (is (= {:db (:db cofx)} (chat/upsert-chat chat-props cofx)))))))
