@@ -15,7 +15,8 @@
 (defn get-all
   []
   (map normalize-chat
-       (-> (realm/get-all :chat)
+       (-> @realm/account-realm
+           (realm/get-all :chat)
            (realm/sorted :timestamp :desc)
            realm/js-object->clj)))
 

@@ -48,10 +48,8 @@
      :data-store/save-message prepared-message}))
 
 (defn- prepare-chat [chat-id {:keys [db now] :as cofx}]
-  (if (get-in db [:chats chat-id])
-    (chat-model/upsert-chat {:chat-id chat-id
-                             :timestamp now} cofx)
-    (chat-model/add-chat chat-id cofx)))
+  (chat-model/upsert-chat {:chat-id chat-id
+                           :timestamp now} cofx))
 
 (defn- get-current-account [{:accounts/keys [accounts current-account-id]}]
   (get accounts current-account-id))
@@ -96,9 +94,12 @@
                                                                   (not (= constants/system from)))))))
 
 (defn receive
-  [{:keys [chat-id message-id] :as message} cofx]
+  [{:keys [chat-id message-id] :as message} {:keys [now] :as cofx}]
   (handlers/merge-fx cofx
-                     (prepare-chat chat-id)
+                     (chat-model/upsert-chat {:chat-id chat-id
+                                              ; We activate a chat again on new messages
+                                              :is-active true
+                                              :timestamp now})
                      (add-received-message message)
                      (requests-events/add-request chat-id message-id)))
 

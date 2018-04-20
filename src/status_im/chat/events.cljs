@@ -222,21 +222,14 @@
   (fn [{:keys [db] :as cofx} [chat-id event]]
     (if (get (:chats db) chat-id)
       {:db (assoc-in db [:chats chat-id :chat-loaded-event] event)}
-      (-> (models/add-chat chat-id cofx) ; chat not created yet, we have to create it
+      (-> (models/upsert-chat {:chat-id chat-id} cofx) ; chat not created yet, we have to create it
           (assoc-in [:db :chats chat-id :chat-loaded-event] event)))))
-
-;; TODO(janherich): remove this unnecessary event in the future (only model function `add-chat` will stay)
-(handlers/register-handler-fx
-  :add-chat
-  [re-frame/trim-v]
-  (fn [cofx [chat-id chat-props]]
-    (models/add-chat chat-id chat-props cofx)))
 
 (defn- ensure-chat-exists
   "Takes chat-id and coeffects map and returns fx to create chat if it doesn't exist"
   [chat-id {:keys [db] :as cofx}]
-  (when-not (get-in cofx [:db :chats chat-id])
-    (models/add-chat chat-id cofx)))
+  (models/upsert-chat {:chat-id chat-id
+                       :is-active true} cofx))
 
 (defn- navigate-to-chat
   "Takes coeffects map and chat-id, returns effects necessary for navigation and preloading data"
@@ -307,7 +300,7 @@
   [re-frame/trim-v]
   (fn [cofx [chat-id]]
     (handlers/merge-fx cofx
-                       (models/remove-chat chat-id) 
+                       (models/remove-chat chat-id)
                        (navigation/replace-view :home))))
 
 (handlers/register-handler-fx
@@ -323,15 +316,11 @@
   :create-new-public-chat
   [re-frame/trim-v]
   (fn [{:keys [db now] :as cofx} [topic]]
-    (if (get-in db [:chats topic])
-      (handlers/merge-fx cofx
-                         (navigation/navigate-to-clean :home)
-                         (navigate-to-chat topic {}))
-      (handlers/merge-fx cofx
-                         (models/add-public-chat topic)
-                         (navigation/navigate-to-clean :home)
-                         (navigate-to-chat topic {})
-                         (public-chat/join-public-chat topic)))))
+    (handlers/merge-fx cofx
+                       (models/add-public-chat topic)
+                       (navigation/navigate-to-clean :home)
+                       (navigate-to-chat topic {})
+                       (public-chat/join-public-chat topic))))
 
 (defn- group-name-from-contacts [selected-contacts all-contacts username]
   (->> selected-contacts

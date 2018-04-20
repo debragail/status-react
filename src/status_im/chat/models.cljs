@@ -25,31 +25,28 @@
      :contacts           [chat-id]
      :last-clock-value   0}))
 
-(defn add-chat
-  "Adds new chat to db & realm, if the chat has been deleted, restores it"
-  ([chat-id cofx]
-   (add-chat chat-id {} cofx))
-  ([chat-id chat-props {:keys [db] :as cofx}]
-   (let [new-chat (merge (create-new-chat chat-id cofx)
-                         chat-props
-                         {:is-active true})]
-     {:db                  (-> db
-                               (update :chats assoc chat-id new-chat))
-      :data-store/save-chat new-chat})))
+(defn upsert-chat
+  "Upsert chat when not deleted"
+  [{:keys [chat-id] :as chat-props} {:keys [db] :as cofx}]
+  (let [chat (merge
+               (or (get (:chats db) chat-id)
+                 (create-new-chat chat-id cofx))
+               chat-props)]
+
+    (if (:is-active chat)
+      {:db                   (update-in db [:chats chat-id] merge chat)
+       :data-store/save-chat chat}
+      ;; when chat is deleted, don't change anything
+      {:db db})))
 
 (defn add-public-chat
   "Adds new public group chat to db & realm"
-  [topic {:keys [db now] :as cofx}]
-  (let [chat {:chat-id          topic
-              :name             topic
-              :color            styles/default-chat-color
-              :group-chat       true
-              :public?          true
-              :is-active        true
-              :timestamp        now
-              :last-clock-value 0}]
-    {:db                   (assoc-in db [:chats topic] chat)
-     :data-store/save-chat chat}))
+  [topic cofx]
+  (upsert-chat {:chat-id topic
+                :is-active true
+                :name             topic
+                :group-chat       true
+                :public?          true} cofx))
 
 (defn add-group-chat
   "Adds new private group chat to db & realm"
@@ -66,17 +63,7 @@
     {:db                   (assoc-in db [:chats chat-id] chat)
      :data-store/save-chat chat}))
 
-(defn upsert-chat
-  "Upsert chat when not deleted"
-  [{:keys [chat-id] :as chat-props} {:keys [db] :as cofx}]
-  (let [chat (or (get (:chats db) chat-id)
-                 (create-new-chat chat-id cofx))]
 
-    (if (:is-active chat)
-      {:db                   (update-in db [:chats chat-id] merge chat chat-props)
-       :data-store/save-chat chat}
-      ;; when chat is deleted, don't change anything
-      {:db db})))
 
 (defn new-update? [{:keys [added-to-at removed-at removed-from-at]} timestamp]
   (and (> timestamp added-to-at)
