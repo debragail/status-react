@@ -82,3 +82,21 @@
       (is (:group-chat group-chat)))
     (testing "it does not sets the public flag"
       (is (not (:public? group-chat))))))
+
+(deftest add-public-chat
+  (let [topic "topic"
+        fx (chat/add-public-chat topic {})
+        store-fx   (:data-store/save-chat fx)
+        chat (get-in fx [:db :chats topic])]
+    (testing "it saves the chat in the database"
+      (is store-fx))
+    (testing "it sets the name"
+      (is (= topic (:name chat))))
+    (testing "it sets the participants"
+      (is (= [] (:contacts chat))))
+    (testing "it sets the chat-id"
+      (is (= topic (:chat-id chat))))
+    (testing "it sets the group-chat flag"
+      (is (:group-chat chat)))
+    (testing "it does not sets the public flag"
+      (is (:public? chat)))))
