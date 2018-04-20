@@ -46,24 +46,18 @@
                 :is-active true
                 :name             topic
                 :group-chat       true
+                :contacts         []
                 :public?          true} cofx))
 
 (defn add-group-chat
   "Adds new private group chat to db & realm"
-  [chat-id chat-name admin participants {:keys [db now] :as cofx}]
-  (let [chat {:chat-id          chat-id
-              :name             chat-name
-              :color            styles/default-chat-color
-              :group-chat       true
-              :group-admin      admin
-              :is-active        true
-              :timestamp        now
-              :contacts         participants
-              :last-clock-value 0}]
-    {:db                   (assoc-in db [:chats chat-id] chat)
-     :data-store/save-chat chat}))
-
-
+  [chat-id chat-name admin participants cofx]
+  (upsert-chat {:chat-id chat-id
+                :name chat-name
+                :is-active true
+                :group-chat true
+                :group-admin admin
+                :contacts participants} cofx))
 
 (defn new-update? [{:keys [added-to-at removed-at removed-from-at]} timestamp]
   (and (> timestamp added-to-at)

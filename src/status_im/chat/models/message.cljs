@@ -121,8 +121,9 @@
   [{:keys [db]} {:keys [chat-id from message-id] :as message}]
   (let [{:keys [chats current-public-key]} db
         {:keys [messages not-loaded-message-ids]} (get chats chat-id)]
-    (not (or (get messages message-id)
-             (get not-loaded-message-ids message-id)))))
+    (when (not= from current-public-key)
+      (not (or (get messages message-id)
+               (get not-loaded-message-ids message-id))))))
 
 (defn message-seen-by? [message user-pk]
   (= :seen (get-in message [:user-statuses user-pk])))

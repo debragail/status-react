@@ -225,12 +225,6 @@
       (-> (models/upsert-chat {:chat-id chat-id} cofx) ; chat not created yet, we have to create it
           (assoc-in [:db :chats chat-id :chat-loaded-event] event)))))
 
-(defn- ensure-chat-exists
-  "Takes chat-id and coeffects map and returns fx to create chat if it doesn't exist"
-  [chat-id {:keys [db] :as cofx}]
-  (models/upsert-chat {:chat-id chat-id
-                       :is-active true} cofx))
-
 (defn- navigate-to-chat
   "Takes coeffects map and chat-id, returns effects necessary for navigation and preloading data"
   [chat-id {:keys [navigation-replace?]} {:keys [db] :as cofx}]
@@ -252,9 +246,11 @@
 (defn start-chat
   "Start a chat, making sure it exists"
   [chat-id opts {:keys [db] :as cofx}]
-  (when (not= (:current-public-key db) chat-id) ; don't allow to open chat with yourself
+  ; don't allow to open chat with yourself
+  (when (not= (:current-public-key db) chat-id)
     (handlers/merge-fx cofx
-                       (ensure-chat-exists chat-id)
+                       (models/upsert-chat {:chat-id chat-id
+                                            :is-active true})
                        (navigate-to-chat chat-id opts))))
 
 (handlers/register-handler-fx
