@@ -8,7 +8,7 @@
 (re-frame/reg-cofx
   :data-store/all-chats
   (fn [cofx _]
-    (assoc cofx :all-stored-chats (data-store/get-all-active))))
+    (assoc cofx :all-stored-chats (data-store/get-all))))
 
 (re-frame/reg-fx
   :data-store/save-chat
