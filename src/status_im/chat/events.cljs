@@ -115,9 +115,15 @@
                                 :chats
                                 vals
                                 (mapcat (comp vals :messages))
-                                (filter (fn [{:keys [from user-statuses]}] (= :sending (get user-statuses from)))))]
-      (doseq [{:keys [chat-id message-id]} pending-messages]
-        (re-frame/dispatch [:update-message-status chat-id message-id :not-sent])))))
+                                (filter (fn [{:keys [from user-statuses]}] (= :sending (get user-statuses from)))))
+          updated-messages (map (fn [{:keys [from] :as message}]
+                                  (assoc-in message [:user-statuses from] :not-sent))
+                                pending-messages)]
+      {:data-store/update-messages updated-messages
+       :db (reduce (fn [m {:keys [chat-id message-id from]}]
+                     (assoc-in m [:chats chat-id :messages message-id :user-statuses from] :not-sent))
+                   db
+                   pending-messages)})))
 
 (defn init-console-chat
   [{:keys [db] :as cofx}]
