@@ -84,25 +84,18 @@
     (update-in db [:chats chat-id :messages message-id] assoc :appearing? false)))
 
 (handlers/register-handler-fx
-  :set-message-envelope-hash
+  :transport/set-message-envelope-hash
   [re-frame/trim-v]
   (fn [{:keys [db]} [chat-id message-id envelope-hash]]
-    {:db (assoc-in db [:message-envelopes envelope-hash] {:chat-id    chat-id
-                                                          :message-id message-id})}))
+    {:db (assoc-in db [:transport/message-envelopes envelope-hash] {:chat-id    chat-id
+                                                                    :message-id message-id})}))
 
 (handlers/register-handler-fx
   :signals/envelope-status
   [re-frame/trim-v]
   (fn [{:keys [db] :as cofx} [envelope-hash status]]
-    (let [{:keys [chat-id message-id]} (get-in db [:message-envelopes envelope-hash])
+    (let [{:keys [chat-id message-id]} (get-in db [:transport/message-envelopes envelope-hash])
           message (get-in db [:chats chat-id :messages message-id])]
-      (models.message/update-message-status message status cofx))))
-
-(handlers/register-handler-fx
-  :update-message-status
-  [re-frame/trim-v]
-  (fn [{:keys [db] :as cofx} [chat-id message-id status]]
-    (let [message (get-in db [:chats chat-id :messages message-id])]
       (models.message/update-message-status message status cofx))))
 
 ;; Change status of messages which are still in "sending" status to "not-sent"

@@ -94,7 +94,7 @@
   (send [this chat-id cofx]
     (send {:chat-id       chat-id
            :payload       this
-           :success-event [:set-message-envelope-hash
+           :success-event [:transport/set-message-envelope-hash
                            chat-id
                            (transport.utils/message-id this)]}
           cofx))
