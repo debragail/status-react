@@ -79,10 +79,14 @@
                       :font  :default}
           (or preview (str params))])])))
 
+(defview message-timestamp [t justify-timestamp?]
+  [react/text {:style (style/message-timestamp justify-timestamp?)} t])
+
 (defn message-view
-  [{:keys [group-chat] :as message} content]
+  [{:keys [timestamp-str] :as message} content {:keys [justify-timestamp?]}]
   [react/view (style/message-view message)
-   content])
+   content
+   [message-timestamp timestamp-str justify-timestamp?]])
 
 (def replacements
   {"\\*[^*]+\\*" {:font-weight :bold}
@@ -160,18 +164,19 @@
                                           (autolink string event-on-press)))
                                  text-seq))))
 
+(defn timestamp-with-padding [t]
+  (str "   " t))
+
 (def cached-parse-text (memoize parse-text))
 
 (defn text-message
-  [{:keys [content] :as message}]
+  [{:keys [content timestamp-str] :as message}]
   [message-view message
    (let [parsed-text (cached-parse-text content :browse-link-from-message)]
-     [react/text {:style (style/text-message message)} parsed-text])])
-
-(defn placeholder-message
-  [{:keys [content] :as message}]
-  [message-view message
-   [react/text {:style (style/text-message message)} content]])
+     [react/text {:style (style/text-message message)}
+      parsed-text
+      [react/text {:style style/message-timestamp-placeholder} (timestamp-with-padding timestamp-str)]])
+   {:justify-timestamp? true}])
 
 (defn emoji-message
   [{:keys [content] :as message}]
@@ -201,10 +206,6 @@
   [wrapper message]
   [wrapper message
    [message-view message [message-content-command message]]])
-
-(defmethod message-content constants/content-type-placeholder
-  [wrapper message]
-  [wrapper message [placeholder-message message]])
 
 (defmethod message-content constants/content-type-emoji
   [wrapper message]
@@ -283,8 +284,6 @@
   (letsubs [{:keys [photo-path]} [:get-current-account]]
     (photo from photo-path)))
 
-(defview message-timestamp [t]
-  [react/text {:style style/message-timestamp} t])
 
 (defview message-author-name [from message-username]
   (letsubs [username [:get-contact-name-by-identity from]]
@@ -293,7 +292,7 @@
                                                        (gfycat/generate-gfy from))])) ; TODO: We defensively generate the name for now, to be revisited when new protocol is defined
 
 (defn message-body
-  [{:keys [timestamp-str last-outgoing? last-in-group? message-type first-in-group? from outgoing group-chat username] :as message} content]
+  [{:keys [last-outgoing? last-in-group? message-type first-in-group? from outgoing group-chat username] :as message} content]
   [react/view (style/group-message-wrapper message)
    [react/view (style/message-body message)
     (when (not outgoing)
@@ -306,8 +305,7 @@
      (when first-in-group?
        [message-author-name from username])
      [react/view {:style (style/timestamp-content-wrapper message)}
-       content
-       [message-timestamp timestamp-str]]]]
+       content]]]
    (when last-outgoing?
      [react/view style/delivery-status
       (if (= message-type :group-user-message)

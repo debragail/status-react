@@ -48,13 +48,18 @@
             :align-self     align
             :align-items    align})))
 
-(def message-timestamp
-  {:margin-left     5
-   :margin-right    5
-   :margin-bottom   -2
-   :color           colors/gray
-   :opacity         0.5
-   :align-self      :flex-end})
+(defn message-timestamp [justify-timestamp?]
+  (cond-> {:color      colors/gray
+           :font-size  10
+           :align-self :flex-end
+           :opacity    0.5}
+    justify-timestamp? (assoc :position :absolute
+                              :bottom   10
+                              :right    12)))
+
+(def message-timestamp-placeholder
+  (assoc (message-timestamp false)
+         :color styles/color-white))
 
 (def selected-message
   {:margin-top  18
@@ -117,7 +122,10 @@
 
 (defn message-view
   [{:keys [content-type outgoing group-chat selected]}]
-  (merge {:padding         12
+  (merge {:padding-top     6
+          :padding-right   12
+          :padding-bottom  8
+          :padding-left    12
           :border-radius   8}
          (when-not (= content-type constants/content-type-emoji)
           {:background-color styles/color-white})
