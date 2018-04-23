@@ -24,26 +24,21 @@
      [react/text {:style (merge options.styles/label-text style)} (i18n/label label)]]]])
 
 (defn view []
-  (let [message-options (re-frame/subscribe [:get-current-chat-ui-prop :message-options])
+  (let [{:keys [chat-id message-id]} (re-frame/subscribe [:get-current-chat-ui-prop :message-options])
         close-message-options-fn #(re-frame/dispatch-sync [:set-chat-ui-props {:show-message-options? false}])]
-    (reagent/create-class
-      {:display-name "message-options-view"
-       :reagent-render
-                     (fn []
-                       (let [{:keys [chat-id message-id]} @message-options]
-                         [bottom-info/overlay {:on-click-outside close-message-options-fn}
-                          [bottom-info/container (* styles/item-height 2)
-                           [react/view
-                            [react/view options.styles/title
-                             [react/text {:style options.styles/title-text} (i18n/label :message-not-sent)]]
-                            [action-item {:label    :resend-message
-                                          :icon     :icons/refresh
-                                          :on-press #(do
-                                                       (close-message-options-fn)
-                                                       (re-frame/dispatch [:resend-message chat-id message-id]))}]
-                            [action-item {:label    :delete-message
-                                          :icon     :icons/delete
-                                          :style    {:color colors/red}
-                                          :on-press #(do
-                                                       (close-message-options-fn)
-                                                       (re-frame/dispatch [:delete-message chat-id message-id]))}]]]]))})))
+      [bottom-info/overlay {:on-click-outside close-message-options-fn}
+       [bottom-info/container (* styles/item-height 2)
+        [react/view
+         [react/view options.styles/title
+          [react/text {:style options.styles/title-text} (i18n/label :message-not-sent)]]
+         [action-item {:label    :resend-message
+                       :icon     :icons/refresh
+                       :on-press #(do
+                                    (close-message-options-fn)
+                                    (re-frame/dispatch [:resend-message chat-id message-id]))}]
+         [action-item {:label    :delete-message
+                       :icon     :icons/delete
+                       :style    {:color colors/red}
+                       :on-press #(do
+                                    (close-message-options-fn)
+                                    (re-frame/dispatch [:delete-message chat-id message-id]))}]]]]))
