@@ -102,6 +102,21 @@
    :android    {:font-size 13}
    :ios        {:font-size 14}})
 
+(def not-sent-view
+  (assoc delivery-view :opacity     1
+                       :padding-top 5))
+
+(def not-sent-text
+  (assoc delivery-text  :color       styles/color-red
+                        :opacity     1
+                        :font-size   12
+                        :text-align  :right
+                        :padding-top 4))
+
+(def not-sent-icon
+  {:padding-top  3
+   :padding-left 3})
+
 (defn text-message
   [{:keys [outgoing group-chat incoming-group]}]
   (merge style-message-text

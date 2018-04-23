@@ -5,6 +5,7 @@
             [status-im.constants :as constants]
             [status-im.i18n :as i18n]
             [status-im.chat.models :as models]
+            [status-im.chat.models.message :as models.message]
             [status-im.chat.console :as console]
             [status-im.chat.constants :as chat.constants]
             [status-im.commands.events.loading :as events.loading]
@@ -54,6 +55,13 @@
     (models/set-chat-ui-props db {:show-bottom-info? true
                                   :bottom-info       details})))
 
+(handlers/register-handler-db
+  :show-message-options
+  [re-frame/trim-v]
+  (fn [db [options]]
+    (models/set-chat-ui-props db {:show-message-options? true
+                                  :message-options       options})))
+
 (def index-messages (partial into {} (map (juxt :message-id identity))))
 
 (handlers/register-handler-fx
@@ -76,13 +84,40 @@
     (update-in db [:chats chat-id :messages message-id] assoc :appearing? false)))
 
 (handlers/register-handler-fx
+  :set-message-envelope-hash
+  [re-frame/trim-v]
+  (fn [{:keys [db]} [chat-id message-id envelope-hash]]
+    {:db (assoc-in db [:message-envelopes envelope-hash] {:chat-id    chat-id
+                                                          :message-id message-id})}))
+
+(handlers/register-handler-fx
+  :signals/envelope-status
+  [re-frame/trim-v]
+  (fn [{:keys [db] :as cofx} [envelope-hash status]]
+    (let [{:keys [chat-id message-id]} (get-in db [:message-envelopes envelope-hash])
+          message (get-in db [:chats chat-id :messages message-id])]
+      (models.message/update-message-status message status cofx))))
+
+(handlers/register-handler-fx
   :update-message-status
   [re-frame/trim-v]
-  (fn [{:keys [db]} [chat-id message-id user-id status]]
-    (let [msg-path [:chats chat-id :messages message-id]
-          new-db   (update-in db (conj msg-path :user-statuses) assoc user-id status)]
-      {:db                        new-db
-       :data-store/update-message (-> (get-in new-db msg-path) (select-keys [:message-id :user-statuses]))})))
+  (fn [{:keys [db] :as cofx} [chat-id message-id status]]
+    (let [message (get-in db [:chats chat-id :messages message-id])]
+      (models.message/update-message-status message status cofx))))
+
+;; Change status of messages which are still in "sending" status to "not-sent"
+;; (If signal from status-go has not been received)
+(handlers/register-handler-fx
+  :process-pending-messages
+  [re-frame/trim-v]
+  (fn [{:keys [db]} []]
+    (let [pending-messages (->> db
+                                :chats
+                                vals
+                                (mapcat (comp vals :messages))
+                                (filter (fn [{:keys [from user-statuses]}] (= :sending (get user-statuses from)))))]
+      (doseq [{:keys [chat-id message-id]} pending-messages]
+        (re-frame/dispatch [:update-message-status chat-id message-id :not-sent])))))
 
 (defn init-console-chat
   [{:keys [db] :as cofx}]
@@ -367,3 +402,15 @@
     (handlers/merge-fx cofx
                        {:db (assoc db :contacts/identity identity)}
                        (navigation/navigate-forget :profile))))
+
+(handlers/register-handler-fx
+  :resend-message
+  [re-frame/trim-v]
+  (fn [cofx [chat-id message-id]]
+    (models.message/resend-message chat-id message-id cofx)))
+
+(handlers/register-handler-fx
+  :delete-message
+  [re-frame/trim-v]
+  (fn [cofx [chat-id message-id]]
+    (models.message/delete-message chat-id message-id cofx)))

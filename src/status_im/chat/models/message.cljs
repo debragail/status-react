@@ -198,7 +198,8 @@
                      :outgoing         true
                      :timestamp        now
                      :clock-value     (utils.clocks/send last-clock-value)
-                     :show?            true}
+                     :show?            true
+                     :user-statuses   {identity :sending}}
                     chat))
 
 (def ^:private transport-keys [:content :content-type :message-type :clock-value :timestamp])
@@ -210,6 +211,25 @@
                        (chat-model/upsert-chat {:chat-id chat-id})
                        (add-message chat-id message-with-id true)
                        (send chat-id send-record))))
+
+(defn update-message-status [{:keys [chat-id message-id from] :as message} status {:keys [db]}]
+  (let [updated-message (assoc-in message [:user-statuses from] status)]
+    {:db                        (assoc-in db [:chats chat-id :messages message-id] updated-message)
+     :data-store/update-message updated-message}))
+
+(defn resend-message [chat-id message-id cofx]
+  (let [message (get-in cofx [:db :chats chat-id :messages message-id])
+        send-record (-> message
+                        (select-keys transport-keys)
+                        (update :message-type keyword)
+                        protocol/map->Message)]
+    (handlers/merge-fx cofx
+                       (send chat-id send-record)
+                       (update-message-status message :sending))))
+
+(defn delete-message [chat-id message-id {:keys [db]}]
+  {:db                        (update-in db [:chats chat-id :messages] dissoc message-id)
+   :data-store/delete-message message-id})
 
 (defn send-message [{:keys [db now random-id] :as cofx} {:keys [chat-id] :as params}]
   (upsert-and-send (prepare-plain-message chat-id params (get-in db [:chats chat-id]) now) cofx))

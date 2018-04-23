@@ -45,6 +45,7 @@
              :inbox/password             constants/inbox-password
              :my-profile/editing?        false
              :transport/chats            {}
+             :message-envelopes          {}
              :desktop/desktop            {:tab-view-id :home}})
 
 ;;;;GLOBAL
@@ -128,6 +129,8 @@
 (spec/def :node/after-start (spec/nilable vector?))
 (spec/def :node/after-stop (spec/nilable vector?))
 
+(spec/def ::message-envelopes (spec/nilable map?))
+
 (spec/def ::db (allowed-keys
                  :opt
                  [:contacts/contacts
@@ -187,6 +190,7 @@
                   ::sync-state
                   ::sync-data
                   ::network
+                  ::message-envelopes
                   :navigation/view-id
                   :navigation/navigation-stack
                   :navigation/prev-tab-view-id
