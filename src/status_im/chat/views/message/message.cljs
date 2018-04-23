@@ -264,7 +264,7 @@
                                                                                {:label        (i18n/label :delete-message)
                                                                                 :destructive? true
                                                                                 :action       #(re-frame/dispatch [:delete-message chat-id message-id])}]})
-                                                 (re-frame/dispatch-sync
+                                                 (re-frame/dispatch
                                                    [:show-message-options {:chat-id    chat-id
                                                                            :message-id message-id}])))}
    [react/view style/not-sent-view
