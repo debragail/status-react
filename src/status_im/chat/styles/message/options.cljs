@@ -18,21 +18,16 @@
    :padding-bottom     10})
 
 (def title-text
- {
-  :font-weight    :bold
-  :font-size      14
-  :letter-spacing -0.2
-  :line-height    20
-  }
-  )
+  {:font-weight    :bold
+   :font-size      14
+   :letter-spacing -0.2
+   :line-height    20})
 
 (def label
   {:padding-horizontal 16})
 
 (def label-text
-  {
-   :font-size 12
-   })
+  {:font-size 12})
 
 (def icon
   {:width            40
